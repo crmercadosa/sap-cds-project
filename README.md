@@ -12,8 +12,7 @@ Este proyecto implementa una API RESTful utilizando **SAP CDS** para gestionar P
 
 ### 1. Clonar el repositorio
 ```sh
-git clone https://github.com/tu-repo/sap-cds-inv.git
-cd sap-cds-inv
+git clone https://github.com/crmercadosa/sap-cds-project.git
 ```
 
 ### 2. Instalar dependencias
