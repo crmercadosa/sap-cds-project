@@ -29,4 +29,16 @@ service InvestmentsRoute @(path:'/api/inv'){
         action addone(prices: priceshistory)
         returns array of priceshistory;
 
+    //localhost:3333/api/inv/updateone
+    @Core.Description: 'update-one-price-history'
+    @path :'updateone'
+        action updateone(prices: priceshistory)
+        returns array of priceshistory;
+
+    //localhost:3333/api/inv/deleteone
+    @Core.Description: 'delete-one-price-history'
+    @path :'deleteone'
+        action deleteone(prices: priceshistory)
+        returns array of priceshistory;
+
 }
