@@ -17,7 +17,10 @@ async function GetAllPricesHistory(req){
         }else{
             pricesHistory = await ztpriceshistory.find().lean();
         }
-        return(pricesHistory);
+        return{
+            message: `Registros encontrados: ${pricesHistory.length}.`,
+            pricesHistory
+        };
     }catch(error){
         return error;
     } finally {
@@ -31,7 +34,10 @@ async function AddOnePriceHistory(req){
         const newPrice = req.req.body.prices;
         let pricesHistory;
         pricesHistory = await ztpriceshistory.insertMany(newPrice, {order: true});
-        return(JSON.parse(JSON.stringify(pricesHistory)));
+        return{
+            message: `Registro(s) insertados correctamente.`,
+            pricesHistory: JSON.parse(JSON.stringify(pricesHistory))
+        };
     }catch(error){
         return error;
     } finally {

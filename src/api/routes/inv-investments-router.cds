@@ -13,8 +13,7 @@ service InvestmentsRoute @(path:'/api/inv'){
 
     //4.-instanciar la entidad de prices history
     entity priceshistory as projection on myinv.priceshistory;
-    entity strategies as projection on myinv.strategies;
-
+    
     // no olvidar que el nombre de la funcion debe ser el mismo que el del path
 
     //localhost:3333/api/inv/getall
