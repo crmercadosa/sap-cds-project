@@ -1,6 +1,4 @@
-# Proyecto SAP CDS - Prices History Manager
-
-Este proyecto implementa una API RESTful utilizando **SAP CDS** para gestionar Prices History.
+# Proyecto SAP CDS
 
 ## Tecnologías Utilizadas
 - **SAP CDS (Core Data Services)**
