@@ -14,12 +14,12 @@ service UsersRoute @(path:'/api/users') {
     @Core.Description: 'add-one-user'
     @path: 'addoneuser'
         action addoneuser(user: users)
-        returns users;
+        returns array of users;
     
     @Core.Description: 'update-one-user'
     @path: 'updateoneuser'
         action updateoneuser(user: users)
-        returns users;
+        returns array of users;
 
     @Core.Description: 'delete-logical-user'
     @path :'deluserlogically'

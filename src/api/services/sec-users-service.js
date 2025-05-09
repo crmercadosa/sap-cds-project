@@ -59,46 +59,54 @@ async function GetAllUsers(req) {
 
 // POST: Agrega un nuevo usuario, incluídos los roles que se requieran para este
 async function AddOneUser(req) {
-    try {
-      const newUser = req.req.body.user;
-  
-      // Validar que los roles que le colocamos al usuario realmente existan
+  try {
+    const newUser = req.req.body.user;
+
+    // Si no hay ROLES, inicializamos como arreglo vacío
+    if (!Array.isArray(newUser.ROLES)) {
+      newUser.ROLES = [];
+    }
+
+    // Validar roles solo si hay alguno
+    if (newUser.ROLES.length > 0) {
       const inputRoles = newUser.ROLES.map(role => role.ROLEID);
       const validRoles = await ztroles.find({ ROLEID: { $in: inputRoles } }).lean();
-  
+
       if (validRoles.length !== inputRoles.length) {
         const validIds = validRoles.map(r => r.ROLEID);
         const invalidIds = inputRoles.filter(id => !validIds.includes(id));
         throw new Error(`Roles inválidos: ${invalidIds.join(', ')}`);
       }
-  
-      // Crear el campo DETAIL_ROW automáticamente
-      const now = new Date();
-      newUser.DETAIL_ROW = {
-        ACTIVED: true,
-        DELETED: false,
-        DETAIL_ROW_REG: [
-          {
-            CURRENT: true,
-            REGDATE: now,
-            REGTIME: now,
-            REGUSER: newUser.USERID
-          }
-        ]
-      };
-  
-      // Guardar en la base de datos
-      const savedUser = await ztusers.create(newUser);
-  
-      return {
-        message: 'Usuario insertado correctamente.',
-        user: JSON.parse(JSON.stringify(savedUser))
-      };
-  
-    } catch (error) {
-      return { error: error.message };
     }
+
+    // Crear el campo DETAIL_ROW automáticamente
+    const now = new Date();
+    newUser.DETAIL_ROW = {
+      ACTIVED: true,
+      DELETED: false,
+      DETAIL_ROW_REG: [
+        {
+          CURRENT: true,
+          REGDATE: now,
+          REGTIME: now,
+          REGUSER: newUser.USERID
+        }
+      ]
+    };
+
+    // Guardar en la base de datos
+    const savedUser = await ztusers.create(newUser);
+
+    return {
+      message: 'Usuario insertado correctamente.',
+      user: JSON.parse(JSON.stringify(savedUser))
+    };
+
+  } catch (error) {
+    return { error: error.message };
   }
+}
+
 
 // UPDATE: Actualiza cualquier campo del usuario, incluidos los roles
 async function UpdateOneUser(req) {

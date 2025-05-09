@@ -1,7 +1,29 @@
 const mongoose = require('mongoose');
 
+// Subdocumento de ROLES sin _id
+const roleSchema = new mongoose.Schema({
+    ROLEID: String,
+    ROLEIDSAP: String
+}, { _id: false });
+
+// Subdocumento de DETAIL_ROW_REG (registro de auditoría)
+const detailRowRegSchema = new mongoose.Schema({
+    CURRENT: Boolean,
+    REGDATE: Date,
+    REGTIME: Date,
+    REGUSER: String
+}, { _id: false });
+
+// Subdocumento de DETAIL_ROW
+const detailRowSchema = new mongoose.Schema({
+    ACTIVED: Boolean,
+    DELETED: Boolean,
+    DETAIL_ROW_REG: [detailRowRegSchema]
+}, { _id: false });
+
+// Esquema principal de usuarios
 const userSchema = new mongoose.Schema({
-    ROLEID: { type: String, required: true, unique: true },
+    USERID: { type: String, required: true, unique: true }, // Este campo faltaba como clave
     PASSWORD: String,
     USERNAME: String,
     ALIAS: String,
@@ -25,20 +47,8 @@ const userSchema = new mongoose.Schema({
     STATE: String,
     COUNTRY: String,
     AVATAR: String,
-    ROLES: [{
-        ROLEID: String,
-        ROLEIDSAP: String
-    }],
-    DETAIL_ROW: {
-        ACTIVED: Boolean,
-        DELETED: Boolean,
-        DETAIL_ROW_REG: [{
-            CURRENT: Boolean,
-            REGDATE: Date,
-            REGTIME: Date,
-            REGUSER: String
-        }]
-    }
+    ROLES: [roleSchema],               // Aquí se usa el subesquema sin _id
+    DETAIL_ROW: detailRowSchema        // Y también aquí
 });
 
 module.exports = mongoose.model(
