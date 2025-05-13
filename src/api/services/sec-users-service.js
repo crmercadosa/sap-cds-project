@@ -67,16 +67,28 @@ async function AddOneUser(req) {
       newUser.ROLES = [];
     }
 
-    // Validar roles solo si hay alguno
-    if (newUser.ROLES.length > 0) {
-      const inputRoles = newUser.ROLES.map(role => role.ROLEID);
-      const validRoles = await ztroles.find({ ROLEID: { $in: inputRoles } }).lean();
+    // Validar roles solo si hay alguno válido
+    if (newUser.ROLES && newUser.ROLES.length > 0) {
+        // Filtrar roles con ROLEID vacío o nulo
+        const filteredRoles = newUser.ROLES.filter(role => role.ROLEID && role.ROLEID.trim() !== "");
 
-      if (validRoles.length !== inputRoles.length) {
-        const validIds = validRoles.map(r => r.ROLEID);
-        const invalidIds = inputRoles.filter(id => !validIds.includes(id));
-        throw new Error(`Roles inválidos: ${invalidIds.join(', ')}`);
-      }
+        if (filteredRoles.length > 0) {
+            const inputRoles = filteredRoles.map(role => role.ROLEID);
+
+            const validRoles = await ztroles.find({ ROLEID: { $in: inputRoles } }).lean();
+
+            if (validRoles.length !== inputRoles.length) {
+                const validIds = validRoles.map(r => r.ROLEID);
+                const invalidIds = inputRoles.filter(id => !validIds.includes(id));
+                throw new Error(`Roles inválidos: ${invalidIds.join(', ')}`);
+            }
+
+            // Actualizar newUser.ROLES solo con los roles válidos
+            newUser.ROLES = filteredRoles;
+        } else {
+            // Si no hay roles válidos, limpiar el array
+            newUser.ROLES = [];
+        }
     }
 
     // Crear el campo DETAIL_ROW automáticamente
@@ -118,14 +130,28 @@ async function UpdateOneUser(req) {
         throw new Error("El campo 'USERID' es obligatorio para actualizar un usuario.");
       }
   
-      // Validar que los nuevos roles existan
-      const inputRoles = updatedUserData.ROLES?.map(role => role.ROLEID) || [];
-      const validRoles = await ztroles.find({ ROLEID: { $in: inputRoles } }).lean();
-  
-      if (validRoles.length !== inputRoles.length) {
-        const validIds = validRoles.map(r => r.ROLEID);
-        const invalidIds = inputRoles.filter(id => !validIds.includes(id));
-        throw new Error(`Roles inválidos: ${invalidIds.join(', ')}`);
+      // Validar roles solo si hay alguno válido
+      if (updatedUserData.ROLES && updatedUserData.ROLES.length > 0) {
+          // Filtrar roles con ROLEID vacío o nulo
+          const filteredRoles = updatedUserData.ROLES.filter(role => role.ROLEID && role.ROLEID.trim() !== "");
+
+          if (filteredRoles.length > 0) {
+              const inputRoles = filteredRoles.map(role => role.ROLEID);
+
+              const validRoles = await ztroles.find({ ROLEID: { $in: inputRoles } }).lean();
+
+              if (validRoles.length !== inputRoles.length) {
+                  const validIds = validRoles.map(r => r.ROLEID);
+                  const invalidIds = inputRoles.filter(id => !validIds.includes(id));
+                  throw new Error(`Roles inválidos: ${invalidIds.join(', ')}`);
+              }
+
+              // Actualizar updatedUserData.ROLES solo con los roles válidos
+              updatedUserData.ROLES = filteredRoles;
+          } else {
+              // Si no hay roles válidos, limpiar el array
+              updatedUserData.ROLES = [];
+          }
       }
   
       // Buscar usuario existente
