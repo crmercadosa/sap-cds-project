@@ -19,7 +19,7 @@ async function GetAllUsers(req) {
   
       if (userId) {
         // Si viene USERID, buscar solo un usuario activo
-        const user = await ztusers.findOne({ USERID: userId, "DETAIL_ROW.ACTIVED": true }).lean();
+        const user = await ztusers.findOne({ USERID: userId}).lean();
         if (!user) {
           return { message: `Usuario con USERID '${userId}' no encontrado o inactivo.` };
         }
@@ -33,7 +33,7 @@ async function GetAllUsers(req) {
         users = [{ ...user, ROLES: rolesWithNames }];
       } else {
         // Si no viene USERID, buscar todos los usuarios activos
-        const allUsers = await ztusers.find({ "DETAIL_ROW.ACTIVED": true }).lean();
+        const allUsers = await ztusers.find().lean();
   
         users = allUsers.map(user => {
           const rolesWithNames = (user.ROLES || []).map(role => ({

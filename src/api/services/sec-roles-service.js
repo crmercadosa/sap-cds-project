@@ -8,7 +8,7 @@ async function GetAllRoles(req) {
 
         if (roleId) {
             // Buscar un solo rol específico
-            const role = await ZTROLES.findOne({ ROLEID: roleId, 'DETAIL_ROW.ACTIVED': true }).lean();
+            const role = await ZTROLES.findOne({ ROLEID: roleId}).lean();
             if (!role) {
                 req.error(404, `Rol no encontrado o inactivo: ${roleId}`);
                 return;
@@ -16,7 +16,7 @@ async function GetAllRoles(req) {
             return role;
         } else {
             // Buscar todos los roles activos
-            const roles = await ZTROLES.find({ 'DETAIL_ROW.ACTIVED': true }).lean();
+            const roles = await ZTROLES.find().lean();
             return roles;
         }
 
