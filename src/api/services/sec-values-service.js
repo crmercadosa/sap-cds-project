@@ -4,18 +4,23 @@ const ztvalues = require('../models/mongodb/ztvalues');
 async function GetAllValues(req) {
   try {
     const labelid = req?.req?.query.LABELID;
+    const companyid = req?.req?.query.COMPANYID;
     let values = [];
 
     if (labelid) {
-      values = await ztvalues.find({ LABELID: labelid, "DETAIL_ROW.ACTIVED": true }).lean();
+      if(companyid){
+        values = await ztvalues.find({ LABELID: labelid, COMPANYID: companyid, "DETAIL_ROW.ACTIVED": true }).lean();
+      }else{
+        values = await ztvalues.find({ LABELID: labelid, "DETAIL_ROW.ACTIVED": true }).lean();
+      }
+
+      return values;
     } else {
       values = await ztvalues.find({ "DETAIL_ROW.ACTIVED": true }).lean();
+
+      return values;
     }
 
-    return {
-      message: `Registros encontrados: ${values.length}.`,
-      values
-    };
   } catch (error) {
     return { error: error.message };
   }

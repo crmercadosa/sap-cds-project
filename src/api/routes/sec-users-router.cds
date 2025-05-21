@@ -30,4 +30,9 @@ service UsersRoute @(path:'/api/users') {
     @path :'deluserphysically'
         action deluserphysically(USERID: String) 
         returns array of users;
+    
+    @Core.Description: 'activate-user'
+    @path :'activateuser'
+        action activateuser(USERID: String) 
+        returns array of users;
 }

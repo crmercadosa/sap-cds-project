@@ -16,10 +16,7 @@ async function GetAllLabels(req) {
       labels = await ztlabels.find({ "DETAIL_ROW.ACTIVED": true }).lean();
     }
 
-    return {
-      message: `Registros encontrados: ${labels.length}.`,
-      labels
-    };
+    return labels;
   } catch (error) {
     return { error: error.message };
   }

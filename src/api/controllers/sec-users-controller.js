@@ -1,5 +1,5 @@
 const cds = require('@sap/cds');
-const { GetAllUsers, AddOneUser, UpdateOneUser, DelUserLogically, DelUserPhysically } = require('../services/sec-users-service');
+const { GetAllUsers, AddOneUser, UpdateOneUser, DelUserLogically, DelUserPhysically, ActivateUser } = require('../services/sec-users-service');
 
 class UsersController extends cds.ApplicationService {
     async init() {
@@ -22,6 +22,10 @@ class UsersController extends cds.ApplicationService {
 
         this.on('deluserphysically', async (req) => {
             return DelUserPhysically(req);
+        });
+
+        this.on('activateuser', async (req) => {
+            return ActivateUser(req);
         });
 
         return await super.init();

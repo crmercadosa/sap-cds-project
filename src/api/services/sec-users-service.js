@@ -125,7 +125,9 @@ async function UpdateOneUser(req) {
     try {
       const updatedUserData = req.req.body.user;
       const userId = req.req.query.USERID;
-  
+
+      console.log("Datos recibidos: ", updatedUserData);
+      
       if (!userId) {
         throw new Error("El campo 'USERID' es obligatorio para actualizar un usuario.");
       }
@@ -153,7 +155,7 @@ async function UpdateOneUser(req) {
               updatedUserData.ROLES = [];
           }
       }
-  
+
       // Buscar usuario existente
       const user = await ztusers.findOne({ 
         USERID: userId, 
@@ -199,8 +201,8 @@ async function UpdateOneUser(req) {
 async function DelUserLogically(req) {
     try {
       const userId = req.req.query?.USERID;
-      const regUser = req.req.query?.REGUSER || userId; // esto es para validar quien hace la acción del borrado lógico
-                                                        // Si el mismo usuario u otro.
+      const regUser = req.req.query?.REGUSER || 'SYSTEM'; // esto es para validar quien hace la acción del borrado lógico
+                                                          // Si el mismo usuario u otro.
   
       if (!userId) {
         throw new Error("Se requiere el USERID para eliminar lógicamente el usuario.");
@@ -243,6 +245,55 @@ async function DelUserLogically(req) {
     }
   }
 
+// ACTIVATE USER: Elimina un usuario lógicamente, marcando la propiedad DETAIL_ROW.DELETED como true
+async function ActivateUser(req) {
+    try {
+      const userId = req.req.query?.USERID;
+      const regUser = req.req.query?.REGUSER || 'SYSTEM'; // esto es para validar quien hace la acción del borrado lógico
+                                                          // Si el mismo usuario u otro.
+  
+      if (!userId) {
+        throw new Error("Se requiere el USERID para activar el usuario.");
+      }
+  
+      const user = await ztusers.findOne({ 
+        USERID: userId, 
+        "DETAIL_ROW.ACTIVED": false,
+        "DETAIL_ROW.DELETED": true
+      });
+  
+      if (!user) {
+        throw new Error(`El usuario ya está activo: '${userId}'`);
+      }
+  
+      // Marcar como no current los anteriores
+      user.DETAIL_ROW.DETAIL_ROW_REG.forEach(reg => reg.CURRENT = false);
+  
+      // Agregar nuevo registro de modificación
+      const now = new Date();
+      const newReg = {
+        CURRENT: true,
+        REGDATE: now,
+        REGTIME: now,
+        REGUSER: regUser
+      };
+  
+      user.DETAIL_ROW.ACTIVED = true;
+      user.DETAIL_ROW.DELETED = false;
+      user.DETAIL_ROW.DETAIL_ROW_REG.push(newReg);
+  
+      await user.save();
+  
+      return {
+        message: `Usuario '${userId}' activado.`,
+        user: JSON.parse(JSON.stringify(user))
+      };
+  
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
 // DELETE PHYSICALLY: Elimina un usuario fisicamente de la base de datos
   async function DelUserPhysically(req) {
     try {
@@ -274,5 +325,6 @@ module.exports = {
     AddOneUser,
     UpdateOneUser,
     DelUserLogically,
-    DelUserPhysically
+    DelUserPhysically,
+    ActivateUser
 };
