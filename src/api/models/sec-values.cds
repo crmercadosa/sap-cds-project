@@ -11,6 +11,7 @@ KEY VALUEID     :String;
     SEQUENCE    :Integer;
     IMAGE       :String;
     DESCRIPTION :String;
+    ROUTE       :String;
     DETAIL_ROW    : Composition of one valuedetailrow;
 }
 

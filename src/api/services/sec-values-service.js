@@ -11,12 +11,12 @@ async function GetAllValues(req) {
       if(companyid){
         values = await ztvalues.find({ LABELID: labelid, COMPANYID: companyid, "DETAIL_ROW.ACTIVED": true }).lean();
       }else{
-        values = await ztvalues.find({ LABELID: labelid, "DETAIL_ROW.ACTIVED": true }).lean();
+        values = await ztvalues.find({ LABELID: labelid}).lean();
       }
 
       return values;
     } else {
-      values = await ztvalues.find({ "DETAIL_ROW.ACTIVED": true }).lean();
+      values = await ztvalues.find().lean();
 
       return values;
     }
@@ -99,15 +99,22 @@ async function DelValueLogically(req) {
   try {
     const valueId = req.req.query?.VALUEID;
     const regUser = req.req.query?.REGUSER || valueId;
+    const type = req.req.query?.TYPE;
 
-    const value = await ztvalues.findOne({ VALUEID: valueId, "DETAIL_ROW.ACTIVED": true });
+    const value = await ztvalues.findOne({ VALUEID: valueId});
     if (!value) throw new Error(`Valor '${valueId}' no encontrado o ya inactivo.`);
 
     value.DETAIL_ROW.DETAIL_ROW_REG.forEach(reg => reg.CURRENT = false);
 
     const now = new Date();
-    value.DETAIL_ROW.ACTIVED = false;
-    value.DETAIL_ROW.DELETED = true;
+    if(type === "delete"){
+      value.DETAIL_ROW.ACTIVED = false;
+      value.DETAIL_ROW.DELETED = true;
+    }else if(type === "actived"){
+      value.DETAIL_ROW.ACTIVED = true;
+      value.DETAIL_ROW.DELETED = false;
+    }
+
     value.DETAIL_ROW.DETAIL_ROW_REG.push({
       CURRENT: true,
       REGDATE: now,
@@ -130,7 +137,6 @@ async function DelValueLogically(req) {
 async function DelValuePhysically(req) {
   try {
     const valueId = req.req.query?.VALUEID;
-
     const deleted = await ztvalues.findOneAndDelete({ VALUEID: valueId });
     if (!deleted) throw new Error(`Valor '${valueId}' no encontrado.`);
 

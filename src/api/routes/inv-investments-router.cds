@@ -13,6 +13,7 @@ service InvestmentsRoute @(path:'/api/inv'){
 
     //4.-instanciar la entidad de prices history
     entity priceshistory as projection on myinv.priceshistory;
+    entity entsimulation as projection on myinv.SIMULATION;
     
     // no olvidar que el nombre de la funcion debe ser el mismo que el del path
 
@@ -39,5 +40,9 @@ service InvestmentsRoute @(path:'/api/inv'){
     @path :'deleteone'
         action deleteone(prices: priceshistory)
         returns array of priceshistory;
+
+    //POST para simualtion
+    @path: 'simulation'
+    action   simulation(SIMULATION : entsimulation)     returns array of entsimulation;
 
 }

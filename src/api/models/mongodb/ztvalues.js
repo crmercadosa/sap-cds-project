@@ -24,6 +24,7 @@ const valueSchema = new mongoose.Schema({
     SEQUENCE: Number,
     IMAGE: String,
     DESCRIPTION: String,
+    ROUTE: String,
     DETAIL_ROW: detailRowSchema
 });
 

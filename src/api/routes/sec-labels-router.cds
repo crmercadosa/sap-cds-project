@@ -34,6 +34,14 @@ service LabelsRoute @(path:'/api/labels') {
     )
     returns array of labels;
 
+    
+    @Core.Description: 'Logical activate of a label'
+    @path : 'actlabellogically'
+    action actlabellogically(
+        label: labels
+    )
+    returns array of labels;
+
     @Core.Description: 'Physical delete of a label'
     @path : 'dellabelphysically'
     action dellabelphysically(

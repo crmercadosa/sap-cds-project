@@ -1,5 +1,5 @@
 const cds = require('@sap/cds');
-const { GetAllLabels, AddOneLabel, UpdateOneLabel, DelLabelLogically, DelLabelPhysically } = require('../services/sec-labels-service');
+const { GetAllLabels, AddOneLabel, UpdateOneLabel, DelLabelLogically, DelLabelPhysically, ActLabelLogically} = require('../services/sec-labels-service');
 
 class RolesController extends cds.ApplicationService {
     async init() {
@@ -22,6 +22,10 @@ class RolesController extends cds.ApplicationService {
 
         this.on('dellabelphysically', async (req) => {
             return DelLabelPhysically(req);
+        });
+
+        this.on('actlabellogically', async (req) => {
+            return ActLabelLogically(req);
         });
 
         return await super.init();
