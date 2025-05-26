@@ -1,196 +1,181 @@
-const cds = require('@sap/cds');
-const ZTROLES = require('../models/mongodb/ztroles'); // El esquema Mongoose de roles
-
-// GET ALL/GET ONE: Obtener todos o un rol activo
+const cds = require("@sap/cds");
+const ZTROLES = require('../models/mongodb/ztroles');
+const ZTUSERS = require('../models/mongodb/ztusers');
+const ZTVALUES = require('../models/mongodb/ztvalues');
+// GET ALL/GET ONE
 async function GetAllRoles(req) {
-    try {
-        const roleId = req?.req?.query?.ROLEID;
-
-        if (roleId) {
-            // Buscar un solo rol específico
-            const role = await ZTROLES.findOne({ ROLEID: roleId}).lean();
-            if (!role) {
-                req.error(404, `Rol no encontrado o inactivo: ${roleId}`);
-                return;
-            }
-            return role;
-        } else {
-            // Buscar todos los roles activos
-            const roles = await ZTROLES.find().lean();
-            return roles;
-        }
-
-    } catch (error) {
-        req.error(500, `Error obteniendo roles: ${error.message}`);
+  try {
+    const roleId = req?.req?.query?.ROLEID;
+    if (roleId) {
+      const role = await ZTROLES.findOne({ ROLEID: roleId }).lean();
+      if (!role) {
+        req.error(404, `Rol no encontrado: ${roleId}`);
+        return;
+      }
+      return role;
+    } else {
+      const roles = await ZTROLES.find().lean();
+      return roles;
     }
-}
-
-// POST: Agregar un nuevo rol
-async function AddOneRole(req) {
-    try {
-      const newRol = req.req.body.role;
-  
-      // Crear el campo DETAIL_ROW automáticamente
-      const now = new Date();
-      newRol.DETAIL_ROW = {
-        ACTIVED: true,
-        DELETED: false,
-        DETAIL_ROW_REG: [
-          {
-            CURRENT: true,
-            REGDATE: now,
-            REGTIME: now,
-            REGUSER: newRol.ROLEID
-          }
-        ]
-      };
-  
-      // Guardar en la base de datos
-      const savedRol = await ZTROLES.create(newRol);
-  
-      return {
-        message: 'Rol insertado correctamente.',
-        role: JSON.parse(JSON.stringify(savedRol))
-      };
-  
-    } catch (error) {
-      return { error: error.message };
-    }
+  } catch (error) {
+    req.error(500, `Error obteniendo roles: ${error.message}`);
   }
-  
+}
 
-// UPDATE: Actualizar un rol existente
+// POST
+async function AddOneRole(req) {
+  try {
+    const newRol = req.req.body.role;
+    const now = new Date();
+    newRol.DETAIL_ROW = {
+      ACTIVED: true,
+      DELETED: false,
+      DETAIL_ROW_REG: [{
+        CURRENT: true,
+        REGDATE: now,
+        REGTIME: now,
+        REGUSER: newRol.ROLEID
+      }]
+    };
+    const savedRol = await ZTROLES.create(newRol);
+    return { message: 'Rol insertado correctamente.', role: savedRol };
+  } catch (error) {
+    return { error: error.message };
+  }
+}
+
+// UPDATE
 async function UpdateOneRole(req) {
-    try {
-        const updatedRoleData = req.req.body.role;  // Datos del rol a actualizar
-        const roleId = req.req.query.ROLEID;  // ID del rol a actualizar
+  try {
+    const updatedRoleData = req.req.body.role;
+    const roleId = req.req.query.ROLEID;
+    if (!roleId) throw new Error("Falta ROLEID.");
 
-        if (!roleId) {
-            throw new Error("El campo 'ROLEID' es obligatorio para actualizar un rol.");
-        }
+    const role = await ZTROLES.findOne({ ROLEID: roleId, "DETAIL_ROW.ACTIVED": true });
+    if (!role) throw new Error(`Rol no encontrado: ${roleId}`);
 
-        // Buscar rol existente
-        const role = await ZTROLES.findOne({
-            ROLEID: roleId,
-            "DETAIL_ROW.ACTIVED": true
-        });
-        if (!role) {
-            throw new Error(`Rol no encontrado o inactivo: ${roleId}`);
-        }
+    role.DETAIL_ROW.DETAIL_ROW_REG.forEach(reg => reg.CURRENT = false);
+    const now = new Date();
+    role.DETAIL_ROW.DETAIL_ROW_REG.push({ CURRENT: true, REGDATE: now, REGTIME: now, REGUSER: roleId });
 
-        // Marcar todos los registros anteriores como CURRENT: false
-        role.DETAIL_ROW.DETAIL_ROW_REG.forEach(reg => reg.CURRENT = false);
-
-        // Agregar nuevo registro de auditoría
-        const now = new Date();
-        role.DETAIL_ROW.DETAIL_ROW_REG.push({
-            CURRENT: true,
-            REGDATE: now,
-            REGTIME: now,
-            REGUSER: roleId  // Suponemos que el ROLEID es el usuario que hace la actualización
-        });
-
-        // Actualizar los demás campos (excepto DETAIL_ROW completo)
-        for (let key in updatedRoleData) {
-            if (key !== "DETAIL_ROW") {
-                role[key] = updatedRoleData[key];
-            }
-        }
-
-        // Guardar cambios en la base de datos
-        const updatedRole = await role.save();
-
-        return {
-            message: "Rol actualizado correctamente.",
-            role: JSON.parse(JSON.stringify(updatedRole))
-        };
-
-    } catch (error) {
-        return { error: error.message };
+    for (let key in updatedRoleData) {
+      if (key !== "DETAIL_ROW") role[key] = updatedRoleData[key];
     }
+
+    const updatedRole = await role.save();
+    return { message: "Rol actualizado correctamente.", role: updatedRole };
+  } catch (error) {
+    return { error: error.message };
+  }
 }
 
-
-// DELETE LOGICALLY: Eliminar un rol lógicamente (marcarlo como inactivo y eliminado)
+// DELETE LOGICAL
 async function DelRoleLogically(req) {
-    try {
-        const roleId = req.req.query?.ROLEID;
-        const regUser = req.req.query?.REGUSER; // Usuario que realiza la acción
+  try {
+    const roleId = req.req.query?.ROLEID;
+    const regUser = req.req.query?.REGUSER;
+    if (!roleId || !regUser) throw new Error("Faltan parámetros.");
 
-        if (!roleId) {
-            throw new Error("Se requiere el ROLEID para eliminar lógicamente el rol.");
-        }else if(!regUser) {
-            throw new Error("Se requiere el estar logueado para eliminar lógicamente el rol.");
-        }
+    const role = await ZTROLES.findOne({ ROLEID: roleId, "DETAIL_ROW.ACTIVED": true });
+    if (!role) throw new Error(`Rol no encontrado: ${roleId}`);
 
-        const role = await ZTROLES.findOne({
-            ROLEID: roleId,
-            "DETAIL_ROW.ACTIVED": true  // Asegurarse de que el rol esté activo
-        });
+    role.DETAIL_ROW.DETAIL_ROW_REG.forEach(reg => reg.CURRENT = false);
+    const now = new Date();
+    role.DETAIL_ROW.DETAIL_ROW_REG.push({ CURRENT: true, REGDATE: now, REGTIME: now, REGUSER: regUser });
 
-        if (!role) {
-            throw new Error(`Rol no encontrado o inactivo: '${roleId}'`);
-        }
+    role.DETAIL_ROW.ACTIVED = false;
+    role.DETAIL_ROW.DELETED = true;
 
-        // Marcar como no current los registros anteriores
-        role.DETAIL_ROW.DETAIL_ROW_REG.forEach(reg => reg.CURRENT = false);
-
-        // Agregar nuevo registro de modificación
-        const now = new Date();
-        const newReg = {
-            CURRENT: true,
-            REGDATE: now,
-            REGTIME: now,
-            REGUSER: regUser
-        };
-
-        // Desactivar el rol y marcarlo como eliminado
-        role.DETAIL_ROW.ACTIVED = false;
-        role.DETAIL_ROW.DELETED = true;
-        role.DETAIL_ROW.DETAIL_ROW_REG.push(newReg);
-
-        // Guardar los cambios
-        await role.save();
-
-        return {
-            message: `Rol '${roleId}' eliminado lógicamente.`,
-            role: JSON.parse(JSON.stringify(role))
-        };
-
-    } catch (error) {
-        return { error: error.message };
-    }
+    await role.save();
+    return { message: `Rol '${roleId}' eliminado lógicamente.`, role };
+  } catch (error) {
+    return { error: error.message };
+  }
 }
 
-// DELETE PHYSICALLY: Eliminar un rol físicamente de la base de datos
+// DELETE PHYSICAL
 async function DelRolePhysically(req) {
-    try {
-        const roleId = req.req.query?.ROLEID;
+  try {
+    const roleId = req.req.query?.ROLEID;
+    if (!roleId) throw new Error("Falta ROLEID.");
+    const deletedRole = await ZTROLES.findOneAndDelete({ ROLEID: roleId });
+    if (!deletedRole) throw new Error(`Rol no encontrado: ${roleId}`);
+    return { message: `Rol '${roleId}' eliminado.`, deletedRole };
+  } catch (error) {
+    req.error(500, `Error eliminando rol: ${error.message}`);
+  }
+}
 
-        if (!roleId) {
-            throw new Error("Se requiere el ROLEID para eliminar físicamente el rol.");
-        }
-        
-        const deletedRole = await ZTROLES.findOneAndDelete({ ROLEID: roleId });
+// GET DETAIL WITH APP, VIEW, PROCESSES
+async function GetRoleDetails(req) {
+  try {
+    const roleId = req?.query?.ROLEID || req?.data?.ROLEID;
+    if (!roleId) throw new Error("Falta ROLEID.");
 
-        if (!deletedRole) {
-            throw new Error(`No se encontró un rol con ROLEID '${roleId}' para eliminar.`);
-        }
+    const role = await ZTROLES.findOne({ ROLEID: roleId }).lean();
+    if (!role) throw new Error("Rol no encontrado.");
 
-        return {
-            message: `Rol '${roleId}' eliminado de la base de datos.`,
-            deletedRole: JSON.parse(JSON.stringify(deletedRole))
-        };    
-        
-        } catch (error) {
-        req.error(500, `Error eliminando físicamente el rol: ${error.message}`);
+    const users = await ZTUSERS.find({ "ROLES.ROLEID": roleId }, {
+      USERID: 1,
+      USERNAME: 1,
+      FIRSTNAME: 1,
+      LASTNAME: 1
+    }).lean();
+
+    const processes = [];
+    for (const p of role.PRIVILEGES || []) {
+      const proc = await ZTVALUES.findOne({ LABELID: "IdProcesses", VALUEID: p.PROCESSID }).lean();
+      const viewId = proc?.VALUEPAID?.split("-")[1];
+      const view = viewId ? await ZTVALUES.findOne({ LABELID: "IdViews", VALUEID: viewId }).lean() : null;
+      const appId = view?.VALUEPAID?.split("-")[1];
+      const app = appId ? await ZTVALUES.findOne({ LABELID: "IdApplications", VALUEID: appId }).lean() : null;
+
+      processes.push({
+        PROCESSID: p.PROCESSID,
+        PROCESSNAME: proc?.VALUE || "",
+        VIEWID: view?.VALUEID || "",
+        VIEWNAME: view?.VALUE || "",
+        APPLICATIONID: app?.VALUEID || "",
+        APPLICATIONNAME: app?.VALUE || "",
+        PRIVILEGES: (p.PRIVILEGEID || []).map(id => ({ PRIVILEGEID: id, PRIVILEGENAME: id }))
+      });
     }
+
+    return {
+      ROLEID: role.ROLEID,
+      ROLENAME: role.ROLENAME,
+      DESCRIPTION: role.DESCRIPTION,
+      PROCESSES: processes,
+      USERS: users
+    };
+  } catch (error) {
+    req.error(500, `Error obteniendo detalles del rol: ${error.message}`);
+  }
+}
+
+// GET ONLY USERS
+async function GetRoleUsers(req) {
+  try {
+     const roleId = req?.query?.ROLEID || req?.data?.ROLEID;
+    if (!ROLEID) throw new Error("Falta ROLEID");
+
+    const users = await ZTUSERS.find(
+      { "ROLES.ROLEID": ROLEID },
+      { USERID: 1, USERNAME: 1, COMPANYNAME: 1, _id: 0 }
+    ).lean();
+
+    return users;
+  } catch (error) {
+    req.error(500, `Error obteniendo usuarios del rol: ${error.message}`);
+  }
 }
 
 module.exports = {
-    GetAllRoles,
-    AddOneRole,
-    UpdateOneRole,
-    DelRoleLogically,
-    DelRolePhysically
+  GetAllRoles,
+  AddOneRole,
+  UpdateOneRole,
+  DelRoleLogically,
+  DelRolePhysically,
+  GetRoleDetails,
+  GetRoleUsers
 };
