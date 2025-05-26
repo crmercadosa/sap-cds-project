@@ -50,7 +50,7 @@ const DETAIL_ROW_SCHEMA = new mongoose.Schema({
 const SIMULATION_SCHEMA = new mongoose.Schema({
   SIMULATIONID: { type: String, required: true },
   USERID: { type: String, required: true },
-  STRATEGY: { type: String, required: true },
+  STRATEGYID: { type: String, required: true },
   SIMULATIONNAME: { type: String, required: true },
   SYMBOL: { type: String, required: true },
   STARTDATE: { type: Date, required: true },

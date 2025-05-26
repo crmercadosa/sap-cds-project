@@ -4,7 +4,7 @@ const cds = require ('@sap/cds');
 //2.-importar el servicio
 const {GetAllPricesHistory, AddOnePriceHistory, UpdateOnePriceHistory, DeleteOnePriceHistory} = require('../services/inv-priceshistory-service');
 
-const {reversionSimple} = require ('../services/inv-simulations-service');
+const {SimulateReversionSimple, simulateSupertrend, SimulateMomentum, SimulateMACrossover} = require ('../services/inv-simulations-service');
 
 //3.- estructura princiapl  de la clas de contorller
 
@@ -61,15 +61,22 @@ class InvestmentsClass extends cds.ApplicationService{
                 case "reversionsimple":
                     // Llama a la función reversionSimple con el objeto 'body' directamente.
                     // 'reversionSimple' ya devuelve un objeto JavaScript.
-                    const result = await reversionSimple(body);
+                    const result = await SimulateReversionSimple(body);
                     // NO uses JSON.parse(result) aquí, porque 'result' ya es un objeto.
                     // El framework se encargará de serializarlo a JSON para la respuesta HTTP.
                     return result; // <-- ¡Esta es la corrección clave!
-
                 // Aquí puedes agregar más estrategias en el futuro:
                 // case 'otraEstrategia':
                 //   return await otraFuncionDeEstrategia(body);
-
+                case "supertrend":
+                    const resultSupert = await simulateSupertrend(body);
+                    return resultSupert;
+                case "momentum":
+                    const resultMomentum = await SimulateMomentum(body);
+                    return resultMomentum;
+                case "macrossover":
+                    const resultCross = await SimulateMACrossover(body);
+                    return resultCross;
                 default:
                     throw new Error(`Estrategia no reconocida: ${strategy}`);
                 }
