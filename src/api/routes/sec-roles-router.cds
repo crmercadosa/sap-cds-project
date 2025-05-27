@@ -37,7 +37,7 @@ service RolesRoute @(path:'/api/roles') {
   @Core.Description: 'Physical delete of a role'
   @path : 'delrolephysically'
   action delrolephysically(
-    role: roles
+    ROLEID: String
   )
   returns array of roles;
 

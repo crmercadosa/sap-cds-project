@@ -38,7 +38,8 @@ async function AddOneRole(req) {
       }]
     };
     const savedRol = await ZTROLES.create(newRol);
-    return { message: 'Rol insertado correctamente.', role: savedRol };
+    // Solución: devolver objeto plano
+    return { message: 'Rol insertado correctamente.', role: JSON.parse(JSON.stringify(savedRol)) };
   } catch (error) {
     return { error: error.message };
   }
@@ -63,7 +64,7 @@ async function UpdateOneRole(req) {
     }
 
     const updatedRole = await role.save();
-    return { message: "Rol actualizado correctamente.", role: updatedRole };
+    return { message: "Rol actualizado correctamente.", role: JSON.parse(JSON.stringify(updatedRole)) };
   } catch (error) {
     return { error: error.message };
   }
@@ -96,11 +97,12 @@ async function DelRoleLogically(req) {
 // DELETE PHYSICAL
 async function DelRolePhysically(req) {
   try {
-    const roleId = req.req.query?.ROLEID;
+    // Soporta ambos: query y data
+    const roleId = req.req?.query?.ROLEID || req.data?.ROLEID;
     if (!roleId) throw new Error("Falta ROLEID.");
     const deletedRole = await ZTROLES.findOneAndDelete({ ROLEID: roleId });
     if (!deletedRole) throw new Error(`Rol no encontrado: ${roleId}`);
-    return { message: `Rol '${roleId}' eliminado.`, deletedRole };
+    return { message: `Rol '${roleId}' eliminado.`, deletedRole: JSON.parse(JSON.stringify(deletedRole)) };
   } catch (error) {
     req.error(500, `Error eliminando rol: ${error.message}`);
   }
