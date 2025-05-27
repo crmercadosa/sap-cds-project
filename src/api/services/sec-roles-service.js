@@ -115,31 +115,70 @@ async function GetRoleDetails(req) {
     const role = await ZTROLES.findOne({ ROLEID: roleId }).lean();
     if (!role) throw new Error("Rol no encontrado.");
 
+    // Cargar todos los catálogos de valores de una sola vez
+    const allValues = await ZTVALUES.find().lean();
+
+    // Catálogos por LABELID
+    const processCatalog = allValues.filter(v => v.LABELID === "IdProcesses");
+    const privilegeCatalog = allValues.filter(v => v.LABELID === "IdPrivileges");
+    const viewCatalog = allValues.filter(v => v.LABELID === "IdViews");
+    const appCatalog = allValues.filter(v => v.LABELID === "IdApplications");
+
+    // Procesar los privilegios del rol
+    const processes = [];
+    for (const p of role.PRIVILEGES || []) {
+      // Buscar proceso
+      const proc = processCatalog.find(proc => proc.VALUEID === p.PROCESSID);
+      const processName = proc?.VALUE || "";
+
+      // Obtener VIEWID desde el PROCESSID si viene como "IdProcess-IdView"
+      let viewId = "";
+      let processIdParts = (p.PROCESSID || "").split("-");
+      if (processIdParts.length === 2) {
+        viewId = processIdParts[1];
+      } else {
+        viewId = proc?.VIEWID || "";
+      }
+      let view = viewCatalog.find(v => v.VALUEID === viewId);
+      let viewName = view?.VALUE || "";
+
+      // Obtener APPLICATIONID desde el VIEWID si viene como "IdView-IdApp"
+      let appId = "";
+      if (view && view.VALUEPAID && view.VALUEPAID.includes("-")) {
+        appId = view.VALUEPAID.split("-")[1] || "";
+      } else {
+        appId = view?.APPLICATIONID || "";
+      }
+      let app = appCatalog.find(a => a.VALUEID === appId);
+      let appName = app?.VALUE || "";
+
+      // Privilegios enriquecidos
+      const privileges = (p.PRIVILEGEID || []).map(id => {
+        const priv = privilegeCatalog.find(pr => pr.VALUEID === id);
+        return {
+          PRIVILEGEID: id,
+          PRIVILEGENAME: priv?.VALUE || id
+        };
+      });
+
+      processes.push({
+        PROCESSID: p.PROCESSID,
+        PROCESSNAME: processName,
+        VIEWID: viewId,
+        VIEWNAME: viewName,
+        APPLICATIONID: appId,
+        APPLICATIONNAME: appName,
+        PRIVILEGES: privileges
+      });
+    }
+
+    // Usuarios relacionados
     const users = await ZTUSERS.find({ "ROLES.ROLEID": roleId }, {
       USERID: 1,
       USERNAME: 1,
       FIRSTNAME: 1,
       LASTNAME: 1
     }).lean();
-
-    const processes = [];
-    for (const p of role.PRIVILEGES || []) {
-      const proc = await ZTVALUES.findOne({ LABELID: "IdProcesses", VALUEID: p.PROCESSID }).lean();
-      const viewId = proc?.VALUEPAID?.split("-")[1];
-      const view = viewId ? await ZTVALUES.findOne({ LABELID: "IdViews", VALUEID: viewId }).lean() : null;
-      const appId = view?.VALUEPAID?.split("-")[1];
-      const app = appId ? await ZTVALUES.findOne({ LABELID: "IdApplications", VALUEID: appId }).lean() : null;
-
-      processes.push({
-        PROCESSID: p.PROCESSID,
-        PROCESSNAME: proc?.VALUE || "",
-        VIEWID: view?.VALUEID || "",
-        VIEWNAME: view?.VALUE || "",
-        APPLICATIONID: app?.VALUEID || "",
-        APPLICATIONNAME: app?.VALUE || "",
-        PRIVILEGES: (p.PRIVILEGEID || []).map(id => ({ PRIVILEGEID: id, PRIVILEGENAME: id }))
-      });
-    }
 
     return {
       ROLEID: role.ROLEID,
