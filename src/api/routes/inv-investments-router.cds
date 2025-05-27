@@ -45,4 +45,10 @@ service InvestmentsRoute @(path:'/api/inv'){
     @path: 'simulation'
     action   simulation(SIMULATION : entsimulation)     returns array of entsimulation;
 
+    //localhost:3333/api/inv/getallSimulations
+    @Core.Description: 'get-all-simulations'
+    @path :'getallSimulations'
+        function getallSimulations()
+        returns array of entsimulation;
+
 }
