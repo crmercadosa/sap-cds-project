@@ -4,7 +4,7 @@ const cds = require ('@sap/cds');
 //2.-importar el servicio
 const {GetAllPricesHistory, AddOnePriceHistory, UpdateOnePriceHistory, DeleteOnePriceHistory} = require('../services/inv-priceshistory-service');
 
-const {SimulateReversionSimple, simulateSupertrend, SimulateMomentum, SimulateMACrossover} = require ('../services/inv-simulations-service');
+const {SimulateReversionSimple, simulateSupertrend, SimulateMomentum, SimulateMACrossover, GetAllSimulations} = require ('../services/inv-simulations-service');
 
 //3.- estructura princiapl  de la clas de contorller
 
@@ -88,12 +88,20 @@ class InvestmentsClass extends cds.ApplicationService{
                 MESSAGE:
                     error.message || "Error al procesar la solicitud de simulación.",
                 };
+                
             }
+
+            
+
+        });
+
+        this.on('getallSimulations', async (req)=> {
+            //llamada al metodo de servicio y retorna el resultado de la ruta
+            return GetAllSimulations(req);
         });
 
         return await super.init();
     };
-
 
 };
 

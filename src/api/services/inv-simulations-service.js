@@ -1,5 +1,6 @@
 const axios = require("axios");
 const SimulationModel = require("../models/mongodb/ztsimulations");
+const ztsimulations = require("../models/mongodb/ztsimulations");
 
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -1592,9 +1593,46 @@ async function SimulateMACrossover(body) {
     }
 }
 
+// Get all, and some
+async function GetAllSimulations(req){
+    try{
+        const dateStart = new Date(req.query?.dateStart);
+        const dateEnd = new Date(req.query?.dateEnd);
+        const name = req.req.query?.SimulationId
+        const price = parseFloat(req.req.query?.idPrice);
+
+        const isValidDate = (d) => d instanceof Date && !isNaN(d);
+
+        let simulations;
+        if(price >=0){
+          simulations = await ztsimulations.findOne({AMOUNT:price}).lean();
+        }else if(name){
+            simulations = await ztsimulations.findOne({SIMULATIONID:name}).lean();
+        }
+        else if(isValidDate(dateStart) && isValidDate(dateEnd)){
+            simulations = await ztsimulations.find({
+                STARTDATE: {$gte: dateStart},
+                ENDDATE: {$lte: dateEnd}
+            }).lean();
+        }
+        else{
+          simulations = await ztsimulations.find().lean();
+        }
+        return{
+            message: `Registros encontrados: ${simulations.length}.`,
+            simulations
+        };
+    }catch(error){
+        return error;
+    } finally {
+
+    }
+};
+
 module.exports = {
   SimulateReversionSimple,
   simulateSupertrend,
   SimulateMomentum,
-  SimulateMACrossover
+  SimulateMACrossover,
+  GetAllSimulations
 };
