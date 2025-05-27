@@ -129,7 +129,7 @@ async function GetRoleDetails(req) {
     for (const p of role.PRIVILEGES || []) {
       // Buscar proceso
       const proc = processCatalog.find(proc => proc.VALUEID === p.PROCESSID);
-      const processName = proc?.VALUE || "";
+      const processName = proc?.VALUE || p.PROCESSID;
 
       // Obtener VIEWID desde el PROCESSID si viene como "IdProcess-IdView"
       let viewId = "";
@@ -140,17 +140,23 @@ async function GetRoleDetails(req) {
         viewId = proc?.VIEWID || "";
       }
       let view = viewCatalog.find(v => v.VALUEID === viewId);
-      let viewName = view?.VALUE || "";
+      let viewName = view?.VALUE || viewId;
 
-      // Obtener APPLICATIONID desde el VIEWID si viene como "IdView-IdApp"
+      // Obtener APPLICATIONID desde el VIEW
       let appId = "";
-      if (view && view.VALUEPAID && view.VALUEPAID.includes("-")) {
-        appId = view.VALUEPAID.split("-")[1] || "";
-      } else {
-        appId = view?.APPLICATIONID || "";
+      if (view) {
+        // Primero, si el documento tiene APPLICATIONID, lo usamos.
+        if (view.APPLICATIONID && view.APPLICATIONID.trim() !== "") {
+          appId = view.APPLICATIONID;
+        }
+        // Si no, intentamos extraerlo de VALUEPAID con formato "IdView-IdApp"
+        else if (view.VALUEPAID && view.VALUEPAID.includes("-")) {
+          const parts = view.VALUEPAID.split("-");
+          appId = parts[parts.length - 1] || "";
+        }
       }
       let app = appCatalog.find(a => a.VALUEID === appId);
-      let appName = app?.VALUE || "";
+      let appName = app ? app.VALUE : (appId || "No definido");
 
       // Privilegios enriquecidos
       const privileges = (p.PRIVILEGEID || []).map(id => {
