@@ -30,21 +30,57 @@ async function GetAllValues(req) {
 async function AddOneValue(req) {
   try {
     const newValue = req.req.body.value;
-
     const now = new Date();
-    newValue.DETAIL_ROW = {
-      ACTIVED: true,
-      DELETED: false,
-      DETAIL_ROW_REG: [
-        {
-          CURRENT: true,
-          REGDATE: now,
-          REGTIME: now,
-          REGUSER: newValue.VALUEID // o el usuario que esté logueado
-        }
-      ]
-    };
 
+    // Verificar si viene DETAIL_ROW desde el front
+    if (!newValue.DETAIL_ROW) {
+      // Si no viene, lo creamos completamente
+      newValue.DETAIL_ROW = {
+        ACTIVED: true,
+        DELETED: false,
+        DETAIL_ROW_REG: [
+          {
+            CURRENT: true,
+            REGDATE: now,
+            REGTIME: now,
+            REGUSER: newValue.VALUEID // o el usuario logueado si está disponible
+          }
+        ]
+      };
+    } else {
+      // Si viene DETAIL_ROW, validamos y completamos sus campos
+      const detail = newValue.DETAIL_ROW;
+
+      // Validar flags
+      if (typeof detail.ACTIVED !== 'boolean') {
+        detail.ACTIVED = true;
+      }
+      if (typeof detail.DELETED !== 'boolean') {
+        detail.DELETED = false;
+      }
+
+      // Validar y completar DETAIL_ROW_REG
+      if (!Array.isArray(detail.DETAIL_ROW_REG) || detail.DETAIL_ROW_REG.length === 0) {
+        detail.DETAIL_ROW_REG = [
+          {
+            CURRENT: true,
+            REGDATE: now,
+            REGTIME: now,
+            REGUSER: newValue.VALUEID
+          }
+        ];
+      } else {
+        // Completar cada entrada
+        detail.DETAIL_ROW_REG = detail.DETAIL_ROW_REG.map(entry => ({
+          CURRENT: entry.CURRENT ?? true,
+          REGDATE: entry.REGDATE ?? now,
+          REGTIME: entry.REGTIME ?? now,
+          REGUSER: entry.REGUSER ?? newValue.VALUEID
+        }));
+      }
+    }
+
+    // Guardar el valor
     const savedValue = await ztvalues.create(newValue);
     return {
       message: 'Valor creado correctamente.',
@@ -55,6 +91,7 @@ async function AddOneValue(req) {
     return { error: error.message };
   }
 }
+
 
 // UPDATE VALUE
 async function UpdateOneValue(req) {

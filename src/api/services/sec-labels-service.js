@@ -44,6 +44,7 @@ async function AddOneLabel(req) {
         ]
       };
     } else {
+      
       // Si viene DETAIL_ROW, validamos y completamos sus campos
       const detail = newLabel.DETAIL_ROW;
 
