@@ -57,7 +57,7 @@ const SIMULATION_SCHEMA = new mongoose.Schema({
   ENDDATE: { type: Date, required: true },
   AMOUNT: { type: Number, required: true },
   SIGNALS: { type: [SIGNAL_SCHEMA], default: [] },
-  INDICATORS: { type: [INDICATOR_SCHEMA], default: [] },
+  SPECS: { type: [INDICATOR_SCHEMA], default: [] },
   SUMMARY: SUMMARY_SCHEMA,
   CHART_DATA: { type: [CHART_DATA_SCHEMA], default: [] },
   DETAIL_ROW: DETAIL_ROW_SCHEMA
