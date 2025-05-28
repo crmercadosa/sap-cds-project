@@ -301,8 +301,7 @@ async function SimulateReversionSimple(req) {
     };
 
     // Objeto DETAIL_ROW (información de registro).
-    const DETAIL_ROW = [
-      {
+    const DETAIL_ROW = {
         ACTIVED: true,
         DELETED: false,
         DETAIL_ROW_REG: [
@@ -313,11 +312,10 @@ async function SimulateReversionSimple(req) {
             REGUSER: USERID // Usuario de la solicitud
           }
         ]
-      }
-    ];
+      };
 
     // Retorna los resultados finales de la simulación con la nueva estructura.
-    return {
+    const simulationResult = {
       SIMULATIONID,
       USERID,
       STRATEGYID,
@@ -325,15 +323,22 @@ async function SimulateReversionSimple(req) {
       SYMBOL,
       // CORRECCIÓN: Ahora 'INDICATORS' es un objeto con una propiedad 'value'
       // que contiene el arreglo original de 'SPECS' de la solicitud.
-      INDICATORS: { value: SPECS },
+      SPECS: { value: SPECS },
       AMOUNT: parseFloat(AMOUNT.toFixed(2)),
       STARTDATE,
       ENDDATE,
       SIGNALS,
       SUMMARY,
       CHART_DATA: NEW_CHART_DATA,
-      DETAIL_ROW
+      DETAIL_ROW: DETAIL_ROW
     };
+
+    // Guarda la simulación en la base de datos MongoDB.
+    const newSimulation = new SimulationModel(simulationResult);
+    await newSimulation.save();
+    // Retorna el resultado de la simulación.
+    return simulationResult;
+
   } catch (ERROR) {
     // Manejo de errores, imprime el mensaje de error y lo relanza.
     console.error("ERROR EN LA FUNCIÓN REVERSION_SIMPLE:", ERROR.message);
@@ -618,8 +623,7 @@ async function simulateSupertrend(req) {
     };
 
 
-    const detailRow = [
-      {
+    const detailRow = {
         ACTIVED: true,
         DELETED: false,
         DETAIL_ROW_REG: [
@@ -630,17 +634,16 @@ async function simulateSupertrend(req) {
             REGUSER: USERID,
           },
         ],
-      },
-    ];
+      };
 
 
-    return {
+    const simulationData = {
       SIMULATIONID,
       USERID,
       STRATEGYID,
       SIMULATIONNAME,
       SYMBOL,
-      INDICATORS: { value: SPECS },
+      SPECS: { value: SPECS },
       AMOUNT: parseFloat(AMOUNT.toFixed(2)),
       SUMMARY: summary,
       STARTDATE,
@@ -649,6 +652,13 @@ async function simulateSupertrend(req) {
       CHART_DATA: chartData,
       DETAIL_ROW: detailRow,
     };
+
+    // Guardar en MongoDB
+        const newSimulation = new SimulationModel(simulationData);
+        await newSimulation.save();
+
+        return simulationData;
+
   } catch (error) {
     console.error("Error en simulación de Supertrend + MA:", error);
     throw error;
@@ -1157,7 +1167,7 @@ async function SimulateMomentum(req) {
       STRATEGYID,
       SIMULATIONNAME,
       SYMBOL,
-      INDICATORS:SPECS,
+      SPECS:SPECS,
       AMOUNT,
       STARTDATE,
       ENDDATE,
