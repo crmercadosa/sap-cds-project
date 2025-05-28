@@ -1207,9 +1207,7 @@ async function SimulateMomentum(req) {
    }
 
 
-   return {
-      simulacion
-   }
+  return simulacion;
 
 
 }
