@@ -19,6 +19,13 @@ entity strategies{
         RISK        : Double;
 }
 
+entity symbols {
+    key symbol    : String;
+        name      : String;
+        exchange  : String;
+        assetType : String;
+};
+
 entity SIMULATION {
     key SIMULATIONID   : String;
         USERID         : String;
