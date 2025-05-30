@@ -14,6 +14,7 @@ service InvestmentsRoute @(path:'/api/inv'){
     //4.-instanciar la entidad de prices history
     entity priceshistory as projection on myinv.priceshistory;
     entity entsimulation as projection on myinv.SIMULATION;
+    entity symbol as projection on myinv.symbols;
     
     // no olvidar que el nombre de la funcion debe ser el mismo que el del path
 
@@ -50,5 +51,10 @@ service InvestmentsRoute @(path:'/api/inv'){
     @path :'getallSimulations'
         function getallSimulations()
         returns array of entsimulation;
+
+    @Core.Description: 'get-all-companys'
+    @path :'companys'
+        function companys()
+        returns array of symbol;
 
 }
