@@ -1,6 +1,9 @@
 const axios = require("axios");
 const SimulationModel = require("../models/mongodb/ztsimulations");
-const ztsimulations = require("../models/mongodb/ztsimulations");
+const CompanyModel = require("../models/mongodb/company");
+const csv = require('csvtojson');
+const APIKEY = "SEC8A2RSSALSMZ7T";
+
 
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -188,23 +191,31 @@ async function SimulateReversionSimple(req) {
       // Compra si el precio está significativamente por debajo del SMA y hay efectivo disponible.
       if (PRICE < SMA * 0.98 && CASH > 0) {
         const INVESTMENT_AMOUNT = CASH * 0.5; // Invierte el 50% del efectivo disponible
-        UNITS_TRANSACTED = INVESTMENT_AMOUNT / PRICE;
+        UNITS_TRANSACTED = Math.max(1, Math.round(INVESTMENT_AMOUNT / PRICE));
         const SPENT = UNITS_TRANSACTED * PRICE;
         UNITS_HELD += UNITS_TRANSACTED;
         CASH -= SPENT;
         TOTAL_BOUGHT_UNITS += UNITS_TRANSACTED;
+
         // Registra la compra para el cálculo FIFO.
         BOUGHT_PRICES.push({ DATE, PRICE, UNITS: UNITS_TRANSACTED });
 
-        CURRENT_SIGNAL_TYPE = "buy"; // Cambiado a minúsculas
-        CURRENT_REASONING = `EL PRECIO ESTÁ POR DEBAJO DEL 98% DEL SMA. RSI: ${RSI.toFixed(
-          2
-        )}`;
+        CURRENT_SIGNAL_TYPE = "buy";
+
+        const SMA_THRESHOLD = SMA * 0.98;
+
+        CURRENT_REASONING =
+        `SEÑAL DE COMPRA DETECTADA: ` +
+        `El precio actual (${PRICE.toFixed(2)}) está por debajo del 98% del SMA (${SMA_THRESHOLD.toFixed(2)}). ` +
+        `RSI: ${RSI.toFixed(2)}. ` +
+        `Se invierte el 50% del efectivo disponible (${INVESTMENT_AMOUNT.toFixed(2)}), ` +
+        `lo que permite adquirir ${UNITS_TRANSACTED} unidades a un precio de ${PRICE.toFixed(2)} por unidad.`;
       }
+
       // Lógica de la estrategia: Señal de VENTA
       // Vende si el precio está significativamente por encima del SMA y hay unidades en posesión.
       else if (PRICE > SMA * 1.02 && UNITS_HELD > 0) {
-        const UNITS_TO_SELL = UNITS_HELD * 0.25; // Vende el 25% de las unidades en posesión
+        const UNITS_TO_SELL = Math.max(1, Math.round(UNITS_HELD * 0.25));
         const REVENUE = UNITS_TO_SELL * PRICE;
         CASH += REVENUE;
         UNITS_HELD -= UNITS_TO_SELL;
@@ -244,11 +255,19 @@ async function SimulateReversionSimple(req) {
           (PRICE - AVG_PURCHASE_PRICE_FOR_SOLD_UNITS) * UNITS_TO_SELL;
         REAL_PROFIT += PROFIT_LOSS;
 
-        CURRENT_SIGNAL_TYPE = "sell"; // Cambiado a minúsculas
-        CURRENT_REASONING = `EL PRECIO ESTÁ POR ENCIMA DEL 102% DEL SMA. RSI: ${RSI.toFixed(
-          2
-        )}`;
+        CURRENT_SIGNAL_TYPE = "sell";
+
+        const SMA_THRESHOLD = SMA * 1.02;
+
+        CURRENT_REASONING =
+          `SEÑAL DE VENTA DETECTADA: ` +
+          `El precio actual (${PRICE.toFixed(2)}) está por encima del 102% del SMA (${SMA_THRESHOLD.toFixed(2)}). ` +
+          `RSI: ${RSI.toFixed(2)}. ` +
+          `Se venden ${UNITS_TO_SELL} unidades a un precio de ${PRICE.toFixed(2)} por unidad, ` +
+          `generando ingresos de ${REVENUE.toFixed(2)}. ` +
+          `Ganancia/Pérdida de esta operación: ${PROFIT_LOSS.toFixed(2)}.`;
       }
+
 
       // Si se generó una señal (compra o venta), registrarla.
       if (CURRENT_SIGNAL_TYPE) {
@@ -1204,9 +1223,7 @@ async function SimulateMomentum(req) {
    }
 
 
-   return {
-      simulacion
-   }
+  return simulacion;
 
 
 }
@@ -1483,7 +1500,7 @@ async function SimulateMACrossover(body) {
                 currentCash = 0;
                 
                 return {
-                    DATE: signal.date,
+                    DATE: new Date (signal.date).toISOString().slice(0, 10),
                     TYPE: 'buy',
                     PRICE: signal.price,
                     REASONING: signal.reasoning,
@@ -1497,7 +1514,7 @@ async function SimulateMACrossover(body) {
                 sharesHeld = 0;
                 
                 return {
-                    DATE: signal.date,
+                    DATE: new Date (signal.date).toISOString().slice(0, 10),  
                     TYPE: 'sell',
                     PRICE: signal.price,
                     REASONING: signal.reasoning,
@@ -1533,7 +1550,7 @@ async function SimulateMACrossover(body) {
 
         // Formatear datos para el gráfico
         const chartData = priceData.map(item => ({
-            DATE: item.date,
+            DATE: new Date(item.date).toISOString().slice(0, 10),
             OPEN: item.open,
             HIGH: item.high,
             LOW: item.low,
@@ -1559,8 +1576,8 @@ async function SimulateMACrossover(body) {
             STRATEGYID: 'IdCM',
             SIMULATIONNAME: `MA Crossover ${shortMa}/${longMa}`,
             SYMBOL,
-            STARTDATE: new Date(STARTDATE),
-            ENDDATE: new Date(ENDDATE),
+            STARTDATE: new Date (STARTDATE).toISOString().slice(0, 10),
+            ENDDATE: new Date (ENDDATE).toISOString().slice(0, 10),
             AMOUNT,
             SIGNALS: processedSignals,
             SPECS: formattedSpecs,
@@ -1615,18 +1632,18 @@ async function GetAllSimulations(req){
 
         let simulations;
         if(price >=0){
-          simulations = await ztsimulations.findOne({AMOUNT:price}).lean();
+          simulations = await SimulationModel.findOne({AMOUNT:price}).lean();
         }else if(name){
-            simulations = await ztsimulations.findOne({SIMULATIONID:name}).lean();
+            simulations = await SimulationModel.findOne({SIMULATIONID:name}).lean();
         }
         else if(isValidDate(dateStart) && isValidDate(dateEnd)){
-            simulations = await ztsimulations.find({
+            simulations = await SimulationModel.find({
                 STARTDATE: {$gte: dateStart},
                 ENDDATE: {$lte: dateEnd}
             }).lean();
         }
         else{
-          simulations = await ztsimulations.find().lean();
+          simulations = await SimulationModel.find().lean();
         }
         return{
             message: `Registros encontrados: ${simulations.length}.`,
@@ -1639,10 +1656,52 @@ async function GetAllSimulations(req){
     }
 };
 
+async function GetAllCompanys(req) {
+  try {
+    // se hace la peticion con Axios, pasando por parametro la key de la API y la funcion que se quiere hacer,
+    //y se espera la respuesta de tipo texto
+    const type = req.req.query?.type;
+    const result = [];
+
+    switch (type) {
+      case "alpha":
+          const response = await axios.get('https://www.alphavantage.co/query', {
+          params: {
+              function: 'LISTING_STATUS',
+              apikey: APIKEY
+            },
+            responseType: 'text'
+          }); 
+
+          // se convierte la respuesta en un objeto json
+          const symbolsJson = await csv().fromString(response.data);
+
+          // Seleccionar solo campos deseados
+          const filteredData = symbolsJson.map(item => ({
+            symbol: item.symbol,
+            name: item.name,
+            exchange: item.exchange,
+            assetType : item.assetType
+          }));
+
+          return filteredData;
+      case "local":
+        const localSymbols = await CompanyModel.find().lean();
+        return localSymbols;
+    }
+
+  } catch (error) {
+    console.log(error);
+    console.error("Error al obtener las compañías:", error.message);
+    return null;
+  }
+};
+
 module.exports = {
   SimulateReversionSimple,
   simulateSupertrend,
   SimulateMomentum,
   SimulateMACrossover,
-  GetAllSimulations
+  GetAllSimulations,
+  GetAllCompanys
 };

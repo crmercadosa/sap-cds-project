@@ -27,3 +27,7 @@ entity labeluserrowreg {
         REGUSER : String;
         parent  : Association to labeluserdetailrow;
 }
+entity ztvalues {
+  key LABELID : String;
+      VALUES  : Array of String;
+}
