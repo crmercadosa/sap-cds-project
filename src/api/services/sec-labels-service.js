@@ -1,4 +1,5 @@
 const ztlabels = require('../models/mongodb/ztlabels');
+const ztvalues = require('../models/mongodb/ztvalues');
 
 // GET ALL LABELS
 async function GetAllLabels(req) {
@@ -194,13 +195,18 @@ async function ActLabelLogically(req) {
 async function DelLabelPhysically(req) {
   try {
     const labelId = req.req.query?.LABELID;
+    if (!labelId) throw new Error("LABELID no proporcionado.");
 
-    const deleted = await ztlabels.findOneAndDelete({ LABELID: labelId });
-    if (!deleted) throw new Error(`Etiqueta '${labelId}' no encontrada.`);
+    // Elimina el label
+    const deletedLabel = await ztlabels.findOneAndDelete({ LABELID: labelId });
+    if (!deletedLabel) throw new Error(`Etiqueta '${labelId}' no encontrada.`);
+
+    // Elimina todos los valores asociados al label
+    const deletedValues = await ztvalues.deleteMany({ LABELID: labelId });
 
     return {
-      message: `Etiqueta '${labelId}' eliminada permanentemente.`,
-      label: JSON.parse(JSON.stringify(deleted))
+      message: `Etiqueta '${labelId}' y ${deletedValues.deletedCount} valores asociados eliminados permanentemente.`,
+      label: JSON.parse(JSON.stringify(deletedLabel))
     };
 
   } catch (error) {

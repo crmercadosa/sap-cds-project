@@ -54,6 +54,8 @@ type SIGNAL {
 // TIPO PARA EL OBJETO DE RESUMEN
 type SUMMARY {
     TOTAL_BOUGHT_UNITS : Decimal(18, 4);
+    TOTAL_PRICE_SOLD_UNITS : Decimal(18, 4);
+    TOTAL_PRICE_BOUGHT_UNITS : Decimal(18, 4);
     TOTAL_SOLD_UNITS   : Decimal(18, 4);
     REMAINING_UNITS   : Decimal(18, 4);
     FINAL_CASH        : Decimal(10, 2);

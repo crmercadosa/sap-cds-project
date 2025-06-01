@@ -25,7 +25,9 @@ const SIGNAL_SCHEMA = new mongoose.Schema({
 
 const SUMMARY_SCHEMA = new mongoose.Schema({
   TOTAL_BOUGHT_UNITS: Number,
+  TOTAL_PRICE_BROUGHT_UNITS: Number,
   TOTAL_SOLDUNITS: Number,
+  TOTAL_PRICE_SOLD_UNITS: Number,
   REMAINING_UNITS: Number,
   FINAL_CASH: Number,
   FINAL_VALUE: Number,

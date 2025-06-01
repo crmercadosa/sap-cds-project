@@ -4,12 +4,12 @@ const ztvalues = require('../models/mongodb/ztvalues');
 async function GetAllValues(req) {
   try {
     const labelid = req?.req?.query.LABELID;
-    const companyid = req?.req?.query.COMPANYID;
+    const valuepa = req?.req?.query.VALUEPAID;
     let values = [];
-
+    
     if (labelid) {
-      if(companyid){
-        values = await ztvalues.find({ LABELID: labelid, COMPANYID: companyid, "DETAIL_ROW.ACTIVED": true }).lean();
+      if(valuepa){
+        values = await ztvalues.find({ LABELID: labelid, VALUEPAID: valuepa, "DETAIL_ROW.ACTIVED": true }).lean();
       }else{
         values = await ztvalues.find({ LABELID: labelid}).lean();
       }

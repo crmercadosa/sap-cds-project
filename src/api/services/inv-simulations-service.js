@@ -161,6 +161,8 @@ async function SimulateReversionSimple(req) {
     let REAL_PROFIT = 0; // Ganancia/pérdida realizada
     const NEW_CHART_DATA = []; // Datos para la visualización en un gráfico (modificado)
 
+    let precioCompraAcciones = 0;
+    let precioVentaAcciones = 0;
     // Bucle principal de la simulación, iterando sobre los precios filtrados.
     for (let I = 0; I < FILTERED_PRICES.length; I++) {
       const {
@@ -197,6 +199,8 @@ async function SimulateReversionSimple(req) {
         CASH -= SPENT;
         TOTAL_BOUGHT_UNITS += UNITS_TRANSACTED;
 
+        precioCompraAcciones += SPENT;
+
         // Registra la compra para el cálculo FIFO.
         BOUGHT_PRICES.push({ DATE, PRICE, UNITS: UNITS_TRANSACTED });
 
@@ -221,6 +225,7 @@ async function SimulateReversionSimple(req) {
         UNITS_HELD -= UNITS_TO_SELL;
         TOTAL_SOLD_UNITS += UNITS_TO_SELL;
         UNITS_TRANSACTED = UNITS_TO_SELL;
+        precioVentaAcciones += REVENUE;
 
         // Lógica FIFO para calcular la ganancia/pérdida real de las unidades vendidas.
         let SOLD_UNITS_COUNTER = UNITS_TO_SELL;
@@ -307,10 +312,14 @@ async function SimulateReversionSimple(req) {
     const FINAL_BALANCE_CALCULATED = CASH + FINAL_VALUE;
     const PERCENTAGE_RETURN = ((FINAL_BALANCE_CALCULATED - AMOUNT) / AMOUNT) * 100;
 
+    console.log(precioCompraAcciones);
+
     // Objeto SUMMARY con los cálculos finales.
     const SUMMARY = {
       TOTAL_BOUGHT_UNITS: parseFloat(TOTAL_BOUGHT_UNITS.toFixed(5)),
+      TOTAL_PRICE_BROUGHT_UNITS: precioCompraAcciones,
       TOTAL_SOLD_UNITS: parseFloat(TOTAL_SOLD_UNITS.toFixed(5)),
+      TOTAL_PRICE_SOLD_UNITS: precioVentaAcciones,
       REMAINING_UNITS: parseFloat(UNITS_HELD.toFixed(5)),
       FINAL_CASH: parseFloat(CASH.toFixed(2)),
       FINAL_VALUE: parseFloat(FINAL_VALUE.toFixed(2)),
